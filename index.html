@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Flipping Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🖥️ PC Flipping Manager</h1>
+            <nav>
+                <button class="nav-btn active" data-page="dashboard">Dashboard</button>
+                <button class="nav-btn" data-page="inventory">Inventar</button>
+                <button class="nav-btn" data-page="builds">Builds</button>
+                <button class="nav-btn" data-page="sales">Verkäufe</button>
+                <div class="theme-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <label for="theme-toggle" class="theme-switch-label"></label>
+                </div>
+            </nav>
+        </header>
+
+        <main>
+            <div id="dashboard" class="page active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Gesamtinventar</h3>
+                        <p class="stat-number" id="total-inventory">0</p>
+                        <span>Komponenten</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Investiertes Kapital</h3>
+                        <p class="stat-number" id="total-invested">0€</p>
+                        <span>Einkaufswert</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Aktive Builds</h3>
+                        <p class="stat-number" id="active-builds">0</p>
+                        <span>In Arbeit</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Gesamtgewinn</h3>
+                        <p class="stat-number profit" id="total-profit">0€</p>
+                        <span>Aus Verkäufen</span>
+                    </div>
+                </div>
+                
+                <div class="quick-actions">
+                    <h3>Schnellaktionen</h3>
+                    <div class="quick-action-grid">
+                        <button class="quick-action-btn" id="qa-add-item">
+                            <span class="icon">+</span>
+                            <span class="text">Komponente hinzufügen</span>
+                        </button>
+                        <button class="quick-action-btn" id="qa-add-build">
+                            <span class="icon">💻</span>
+                            <span class="text">Neuen Build starten</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="analytics">
+                    <h3>Analysen</h3>
+                    <div class="chart-grid">
+                        <div class="chart-card">
+                            <h4>Meistgenutzte Marke</h4>
+                            <canvas id="brandChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h4>Meistgenutzte Kategorie</h4>
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-activity">
+                    <h3>Letzte Aktivitäten</h3>
+                    <div id="recent-list">
+                        <p class="no-data">Noch keine Aktivitäten</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="inventory" class="page">
+                <div class="page-header">
+                    <h2>Inventar</h2>
+                    <div class="header-buttons">
+                        <button id="add-item-btn" class="btn-primary">+ Komponente hinzufügen</button>
+                        <button id="combo-splitter-btn" class="btn-secondary">📦 Kombo-Splitter</button>
+                    </div>
+                </div>
+                <div class="search-filter">
+                    <input type="text" id="search-inventory" placeholder="Suchen...">
+                    <select id="filter-category">
+                        <option value="">Alle Kategorien</option>
+                        <option value="CPU">CPU</option>
+                        <option value="GPU">GPU</option>
+                        <option value="RAM">RAM</option>
+                        <option value="Motherboard">Motherboard</option>
+                        <option value="SSD">SSD</option>
+                        <option value="HDD">HDD</option>
+                        <option value="Netzteil">Netzteil</option>
+                        <option value="Gehäuse">Gehäuse</option>
+                        <option value="Kühler">Kühler</option>
+                        <option value="Lüfter">Lüfter</option>
+                        <option value="Sonstiges">Sonstiges</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table id="inventory-table">
+                        <thead>
+                            <tr>
+                                <th>Kategorie</th>
+                                <th>Marke</th>
+                                <th>Modell</th>
+                                <th>Einkaufspreis</th>
+                                <th>Datum</th>
+                                <th>Quelle</th>
+                                <th>Status</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-tbody">
+                            <tr class="no-data">
+                                <td colspan="8">Keine Komponenten im Inventar</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="builds" class="page">
+                <div class="page-header">
+                    <h2>PC Builds</h2>
+                    <button id="add-build-btn" class="btn-primary">+ Neuer Build</button>
+                </div>
+                <div id="builds-grid" class="builds-grid">
+                    <div class="no-data">Noch keine Builds erstellt</div>
+                </div>
+            </div>
+
+            <div id="sales" class="page">
+                <div class="page-header">
+                    <h2>Verkäufe</h2>
+                </div>
+                <div class="table-container">
+                    <table id="sales-table">
+                        <thead>
+                            <tr>
+                                <th>Build Name</th>
+                                <th>Verkaufspreis</th>
+                                <th>Kosten</th>
+                                <th>Gewinn</th>
+                                <th>Datum</th>
+                                <th>Käufer</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-tbody">
+                            <tr class="no-data">
+                                <td colspan="7">Noch keine Verkäufe</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="addItemModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Komponente hinzufügen</h3>
+            <form id="addItemForm">
+                <div class="form-group">
+                    <label for="item-category">Kategorie:</label>
+                    <select id="item-category" required>
+                        <option value="">Wählen...</option>
+                        <option value="CPU">CPU</option>
+                        <option value="GPU">GPU</option>
+                        <option value="RAM">RAM</option>
+                        <option value="Motherboard">Motherboard</option>
+                        <option value="SSD">SSD</option>
+                        <option value="HDD">HDD</option>
+                        <option value="Netzteil">Netzteil</option>
+                        <option value="Gehäuse">Gehäuse</option>
+                        <option value="Kühler">Kühler</option>
+                        <option value="Lüfter">Lüfter</option>
+                        <option value="Sonstiges">Sonstiges</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="item-brand">Marke:</label>
+                    <select id="item-brand" required>
+                        <option value="">Wählen...</option>
+                        <option value="AMD">AMD</option>
+                        <option value="Intel">Intel</option>
+                        <option value="NVIDIA">NVIDIA</option>
+                        <option value="ASUS">ASUS</option>
+                        <option value="MSI">MSI</option>
+                        <option value="Gigabyte">Gigabyte</option>
+                        <option value="Corsair">Corsair</option>
+                        <option value="Samsung">Samsung</option>
+                        <option value="Kingston">Kingston</option>
+                        <option value="Seagate">Seagate</option>
+                        <option value="be quiet!">be quiet!</option>
+                        <option value="Fractal Design">Fractal Design</option>
+                        <option value="Sonstige">Sonstige</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="item-model">Modell:</label>
+                    <input type="text" id="item-model" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-price">Einkaufspreis (€):</label>
+                    <input type="number" id="item-price" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-date">Datum des Kaufs:</label>
+                    <input type="date" id="item-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-source">Quelle (Wo gekauft?):</label>
+                    <select id="item-source">
+                        <option value="">Wählen...</option>
+                        <option value="Kleinanzeigen">Kleinanzeigen</option>
+                        <option value="eBay">eBay</option>
+                        <option value="Amazon">Amazon</option>
+                        <option value="Mindfactory">Mindfactory</option>
+                        <option value="Alternate">Alternate</option>
+                        <option value="Mediamarkt">Mediamarkt</option>
+                        <option value="Sonstige">Sonstige</option>
+                    </select>
+                </div>
+                <div id="item-status-field" class="form-group" style="display: none;">
+                    <label for="item-status">Status:</label>
+                    <select id="item-status" required>
+                        <option value="available">Verfügbar</option>
+                        <option value="used">Verbaut</option>
+                        <option value="sold">Verkauft</option>
+                    </select>
+                    <small style="color: #6c757d; display: block; margin-top: 0.25rem;">
+                        ⚠️ Achtung: Status-Änderungen können Auswirkungen auf Builds haben
+                    </small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addItemModal')">Abbrechen</button>
+                    <button type="submit" class="btn-primary">Hinzufügen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="addBuildModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Neuer PC Build</h3>
+            <form id="addBuildForm">
+                <div class="form-group">
+                    <label for="build-name">Build Name:</label>
+                    <input type="text" id="build-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="build-target-price">Zielverkaufspreis (€):</label>
+                    <input type="number" id="build-target-price" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="build-budget">Budget (€):</label>
+                    <input type="number" id="build-budget" step="0.01">
+                    <small style="color: #6c757d; display: block; margin-top: 0.25rem;">
+                        Optionales Budget für den Build
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="build-image-url">Bild URL:</label>
+                    <input type="url" id="build-image-url">
+                    <small style="color: #6c757d; display: block; margin-top: 0.25rem;">
+                        Fügen Sie eine Bild-URL hinzu, um den Build zu visualisieren.
+                    </small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addBuildModal')">Abbrechen</button>
+                    <button type="submit" class="btn-primary">Erstellen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="selectComponentModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Komponente auswählen</h3>
+            <div class="modal-inventory">
+                <div class="search-filter">
+                    <input type="text" id="search-modal-inventory" placeholder="Suchen...">
+                    <select id="filter-modal-category">
+                        <option value="">Alle Kategorien</option>
+                        <option value="CPU">CPU</option>
+                        <option value="GPU">GPU</option>
+                        <option value="RAM">RAM</option>
+                        <option value="Motherboard">Motherboard</option>
+                        <option value="SSD">SSD</option>
+                        <option value="HDD">HDD</option>
+                        <option value="Netzteil">Netzteil</option>
+                        <option value="Gehäuse">Gehäuse</option>
+                        <option value="Kühler">Kühler</option>
+                        <option value="Lüfter">Lüfter</option>
+                        <option value="Sonstiges">Sonstiges</option>
+                    </select>
+                </div>
+                <div id="modal-inventory-list">
+                    <p class="no-data">Keine verfügbaren Komponenten gefunden.</p>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('selectComponentModal')">Schließen</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="sellBuildModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Build verkaufen</h3>
+            <form id="sellBuildForm">
+                <div class="form-group">
+                    <label for="sale-price">Verkaufspreis (€):</label>
+                    <input type="number" id="sale-price" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="sale-date">Verkaufsdatum:</label>
+                    <input type="date" id="sale-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="sale-buyer">Käufer (optional):</label>
+                    <input type="text" id="sale-buyer">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('sellBuildModal')">Abbrechen</button>
+                    <button type="submit" class="btn-primary">Verkaufen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editSaleModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Verkauf bearbeiten</h3>
+            <form id="editSaleForm">
+                <div class="form-group">
+                    <label for="edit-sale-price">Verkaufspreis (€):</label>
+                    <input type="number" id="edit-sale-price" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-sale-date">Verkaufsdatum:</label>
+                    <input type="date" id="edit-sale-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-sale-buyer">Käufer (optional):</label>
+                    <input type="text" id="edit-sale-buyer">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('editSaleModal')">Abbrechen</button>
+                    <button type="submit" class="btn-primary">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="comboSplitterModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Kombo-Splitter</h3>
+            <div class="form-group">
+                <label for="combo-total-price">Gesamtpreis (€):</label>
+                <input type="number" id="combo-total-price" step="0.01" required>
+            </div>
+            <div id="combo-inventory-list">
+                </div>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('comboSplitterModal')">Abbrechen</button>
+                <button type="button" class="btn-primary" id="split-price-btn">Preis aufteilen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dataManagementModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Datenmanagement</h3>
+            <div class="form-actions" style="display: flex; flex-direction: column; gap: 1rem;">
+                <button id="exportDataBtn" class="btn-primary">Export als JSON</button>
+                <button id="importDataBtn" class="btn-secondary">Import aus JSON</button>
+                <input type="file" id="importFile" accept="application/json" style="display: none;">
+                <button id="clearDataBtn" class="btn-danger">Alle Daten löschen</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
