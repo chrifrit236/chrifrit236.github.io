@@ -343,29 +343,30 @@
     </div>
 
     <div id="sellItemModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Komponente verkaufen</h3>
-            <div id="sellItemInfo"></div>
-            <form id="sellItemForm">
-                <div class="form-group">
-                    <label for="item-sale-price">Verkaufspreis (€):</label>
-                    <input type="number" id="item-sale-price" step="0.01" required>
-                </div>
-                <div class="form-group">
-                    <label for="item-sale-buyer">Käufer (optional):</label>
-                    <input type="text" id="item-sale-buyer">
-                </div>
-                <div class="form-group">
-                    <label for="item-sale-date">Datum des Verkaufs:</label>
-                    <input type="date" id="item-sale-date" required>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="closeModal('sellItemModal')">Abbrechen</button>
-                    <button type="submit" class="btn-success">Verkauf abschließen</button>
-                </div>
-            </form>
-        </div>
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3>Teil verkaufen</h3>
+        <div id="sellItemInfo"></div>
+        <form id="sellItemForm">
+            <div class="form-group">
+                <label for="item-sale-price">Verkaufspreis (€):</label>
+                <input type="number" id="item-sale-price" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="item-sale-buyer">Käufer (optional):</label>
+                <input type="text" id="item-sale-buyer">
+            </div>
+            <div class="form-group">
+                <label for="item-sale-date">Verkaufsdatum:</label>
+                <input type="date" id="item-sale-date" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('sellItemModal')">Abbrechen</button>
+                <button type="submit" class="btn-primary">Verkaufen</button>
+            </div>
+        </form>
+    </div>
+</div>
     </div>
 
     <div id="comboSplitterModal" class="modal">
@@ -433,3 +434,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
