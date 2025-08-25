@@ -225,6 +225,20 @@ table thead th {
     font-weight: bold;
     color: var(--secondary-color);
     text-transform: uppercase;
+    cursor: pointer; /* Makes it clickable */
+    position: relative; /* For the sort icon */
+}
+
+table thead th:hover {
+    background-color: var(--secondary-color);
+    color: #fff;
+}
+
+table thead th .sort-icon {
+    position: absolute;
+    right: 10px;
+    color: inherit;
+    font-size: 0.8em;
 }
 
 table tbody tr:hover {
@@ -238,10 +252,7 @@ table tbody tr:hover {
     padding: 20px;
 }
 
-.btn-primary,
-.btn-secondary,
-.btn-success,
-.btn-danger {
+.btn-primary, .btn-secondary, .btn-success, .btn-danger {
     padding: 10px 15px;
     border: none;
     border-radius: 8px;
@@ -255,6 +266,7 @@ table tbody tr:hover {
     background-color: var(--primary-color);
     color: #fff;
 }
+
 .btn-primary:hover {
     background-color: var(--primary-hover);
     transform: translateY(-1px);
@@ -264,6 +276,7 @@ table tbody tr:hover {
     background-color: var(--secondary-color);
     color: #fff;
 }
+
 .btn-secondary:hover {
     background-color: var(--secondary-hover);
     transform: translateY(-1px);
@@ -273,6 +286,7 @@ table tbody tr:hover {
     background-color: var(--success-color);
     color: #fff;
 }
+
 .btn-success:hover {
     background-color: var(--success-hover);
     transform: translateY(-1px);
@@ -282,14 +296,26 @@ table tbody tr:hover {
     background-color: var(--danger-color);
     color: #fff;
 }
+
 .btn-danger:hover {
     background-color: var(--danger-hover);
     transform: translateY(-1px);
 }
 
-.status-available { color: var(--success-color); font-weight: bold; }
-.status-used { color: var(--primary-color); font-weight: bold; }
-.status-sold { color: var(--danger-color); font-weight: bold; }
+.status-available {
+    color: var(--success-color);
+    font-weight: bold;
+}
+
+.status-used {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.status-sold {
+    color: var(--danger-color);
+    font-weight: bold;
+}
 
 .modal {
     display: none;
@@ -323,20 +349,21 @@ table tbody tr:hover {
     margin-bottom: 1rem;
 }
 
-.modal-content .close {
+.close {
     color: var(--secondary-color);
     position: absolute;
     top: 15px;
     right: 25px;
-    font-size: 2rem;
+    font-size: 30px;
     font-weight: bold;
-    cursor: pointer;
     transition: color 0.2s;
 }
 
-.modal-content .close:hover,
-.modal-content .close:focus {
+.close:hover,
+.close:focus {
     color: var(--danger-color);
+    text-decoration: none;
+    cursor: pointer;
 }
 
 .form-group {
@@ -350,19 +377,21 @@ table tbody tr:hover {
 }
 
 .form-group input,
-.form-group select {
-    width: calc(100% - 22px);
+.form-group select,
+.form-group textarea {
+    width: 100%;
     padding: 10px;
+    box-sizing: border-box;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background-color: var(--bg-color);
     color: var(--text-color);
-    font-size: 1rem;
     transition: border-color 0.2s;
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
     outline: none;
     border-color: var(--primary-color);
 }
@@ -374,31 +403,10 @@ table tbody tr:hover {
     margin-top: 1.5rem;
 }
 
-.modal-inventory {
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-top: 1rem;
-}
-
-.modal-inventory-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.modal-inventory-item:last-child {
-    border-bottom: none;
-}
-
 .builds-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
 }
 
 .build-card {
@@ -406,14 +414,21 @@ table tbody tr:hover {
     border-radius: 10px;
     padding: 20px;
     box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
     display: flex;
     flex-direction: column;
-    transition: background-color 0.3s, box-shadow 0.3s;
+    justify-content: space-between;
+}
+
+.build-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .build-card img {
-    max-width: 100%;
-    height: auto;
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
     border-radius: 8px;
     margin-bottom: 1rem;
 }
@@ -421,22 +436,28 @@ table tbody tr:hover {
 .build-card h4 {
     margin: 0;
     font-size: 1.2rem;
+    color: var(--primary-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .build-stats {
     display: flex;
     justify-content: space-between;
-    margin: 1rem 0;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
 .build-stat {
     text-align: center;
-    flex-grow: 1;
+    flex-basis: 30%;
 }
 
 .build-stat strong {
     display: block;
     font-size: 1.2rem;
+    font-weight: bold;
     color: var(--primary-color);
 }
 
@@ -445,37 +466,45 @@ table tbody tr:hover {
     color: var(--secondary-color);
 }
 
-.build-stat strong.budget { color: #f39c12; }
-.build-stat strong.cost { color: var(--danger-color); }
-
 .build-components {
     margin-top: 1rem;
-    border-top: 1px solid var(--border-color);
-    padding-top: 1rem;
+}
+
+.build-components h5 {
+    margin: 0 0 0.5rem 0;
+    color: var(--secondary-color);
+    font-size: 1rem;
 }
 
 .component-item {
-    padding: 5px 0;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
 }
 
-.component-item .btn-danger {
-    padding: 3px 8px;
-    font-size: 0.8rem;
-    margin-left: 5px;
-}
-
-/* Dark Mode Switch */
-.theme-switch {
+.combo-item-entry {
     display: flex;
     align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.combo-item-entry label {
+    margin-left: 10px;
+    font-weight: normal;
+}
+
+.theme-switch {
+    position: relative;
+    width: 48px;
+    height: 24px;
 }
 
 .theme-switch-label {
-    width: 50px;
-    height: 26px;
+    display: block;
+    width: 100%;
+    height: 100%;
     background-color: var(--secondary-color);
-    border-radius: 13px;
-    position: relative;
+    border-radius: 12px;
     cursor: pointer;
     transition: background-color 0.3s;
 }
@@ -483,8 +512,8 @@ table tbody tr:hover {
 .theme-switch-label::after {
     content: '';
     position: absolute;
-    top: 3px;
-    left: 3px;
+    top: 2px;
+    left: 2px;
     width: 20px;
     height: 20px;
     background-color: var(--card-bg);
@@ -535,30 +564,18 @@ table tbody tr:hover {
     color: var(--text-color);
 }
 
-.analytics {
-    margin-top: 2rem;
-}
-
-.chart-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-}
-
-.chart-card {
-    background-color: var(--bg-color);
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: var(--shadow);
-    text-align: center;
-    transition: background-color 0.3s, box-shadow 0.3s;
-}
-.chart-card h4 {
-    margin-top: 0;
-    color: var(--primary-color);
-}
-
-.header-buttons {
+.sort-control {
     display: flex;
+    align-items: center;
     gap: 10px;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+.sort-control select {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 8px;
+    border-radius: 8px;
 }
