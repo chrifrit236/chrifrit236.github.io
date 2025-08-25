@@ -3,344 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PC Flipping Manager</title>
+    <title>PC-Flipping Web-App</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <h1>🖥️ PC Flipping Manager</h1>
-            <div class="header-controls">
-                <button id="darkModeToggle" class="btn-icon">
-                    🌙
-                </button>
-                <div class="view-toggle">
-                    <button id="tableView" class="btn-view active">
-                        📋
-                    </button>
-                    <button id="cardView" class="btn-view">
-                        🎴
-                    </button>
-                </div>
-            </div>
-        </div>
+    <header>
+        <h1>PC-Flipping Web-App</h1>
+        <button id="toggleDark">Dark Mode</button>
     </header>
 
-    <!-- Navigation -->
-    <nav class="nav">
-        <div class="container">
-            <div class="nav-buttons">
-                <button class="nav-btn active" data-section="inventory">
-                    📦 Inventar
-                </button>
-                <button class="nav-btn" data-section="builds">
-                    🖥️ Builds
-                </button>
-                <button class="nav-btn" data-section="bundles">
-                    📚 Bundles
-                </button>
-                <button class="nav-btn" data-section="finances">
-                    📊 Finanzen
-                </button>
+    <main>
+        <!-- Navigation -->
+        <nav>
+            <button data-tab="inventory">Inventar</button>
+            <button data-tab="builds">Builds</button>
+            <button data-tab="bundles">Bundles</button>
+            <button data-tab="finance">Finanzen</button>
+        </nav>
+
+        <!-- Inventarverwaltung -->
+        <section id="inventory" class="tab">
+            <div class="controls">
+                <button id="addPartBtn">Teil hinzufügen</button>
+                <input type="text" id="searchPart" placeholder="Suchen...">
+                <select id="filterCategory">
+                    <option value="">Alle Kategorien</option>
+                </select>
+                <select id="viewMode">
+                    <option value="table">Tabellenansicht</option>
+                    <option value="cards">Kartenansicht</option>
+                </select>
             </div>
-        </div>
-    </nav>
+            <div id="inventoryContainer"></div>
+        </section>
 
-    <!-- Main Content -->
-    <main class="main">
-        <div class="container">
-            <!-- Inventory Section -->
-            <section id="inventory" class="section active">
-                <div class="section-header">
-                    <h2>Inventar</h2>
-                    <div class="section-controls">
-                        <div class="search-box">
-                            <input type="text" id="inventorySearch" placeholder="🔍 Teile suchen...">
-                        </div>
-                        <select id="categoryFilter">
-                            <option value="">Alle Kategorien</option>
-                            <option value="CPU">CPU</option>
-                            <option value="GPU">GPU</option>
-                            <option value="RAM">RAM</option>
-                            <option value="Mainboard">Mainboard</option>
-                            <option value="Storage">Storage</option>
-                            <option value="PSU">Netzteil</option>
-                            <option value="Case">Gehäuse</option>
-                            <option value="Cooling">Kühlung</option>
-                        </select>
-                        <button id="addPartBtn" class="btn-primary">
-                            ➕ Teil hinzufügen
-                        </button>
-                    </div>
-                </div>
-                
-                <div id="inventoryContent" class="content-area">
-                    <!-- Inventory items will be rendered here -->
-                </div>
-            </section>
+        <!-- Build-Management -->
+        <section id="builds" class="tab">
+            <button id="addBuildBtn">Build erstellen</button>
+            <div id="buildsContainer"></div>
+        </section>
 
-            <!-- Builds Section -->
-            <section id="builds" class="section">
-                <div class="section-header">
-                    <h2>Builds</h2>
-                    <div class="section-controls">
-                        <button id="addBuildBtn" class="btn-primary">
-                            ➕ Build erstellen
-                        </button>
-                    </div>
-                </div>
-                
-                <div id="buildsContent" class="content-area">
-                    <!-- Builds will be rendered here -->
-                </div>
-            </section>
+        <!-- Bundle-Verwaltung -->
+        <section id="bundles" class="tab">
+            <button id="addBundleBtn">Bundle erstellen</button>
+            <div id="bundlesContainer"></div>
+        </section>
 
-            <!-- Bundles Section -->
-            <section id="bundles" class="section">
-                <div class="section-header">
-                    <h2>Bundles</h2>
-                    <div class="section-controls">
-                        <button id="addBundleBtn" class="btn-primary">
-                            ➕ Bundle erstellen
-                        </button>
-                    </div>
-                </div>
-                
-                <div id="bundlesContent" class="content-area">
-                    <!-- Bundles will be rendered here -->
-                </div>
-            </section>
-
-            <!-- Finances Section -->
-            <section id="finances" class="section">
-                <div class="section-header">
-                    <h2>Finanzen</h2>
-                </div>
-                
-                <div class="finance-overview">
-                    <div class="finance-card">
-                        <h3>Gesamtinvestition</h3>
-                        <div class="finance-value" id="totalInvestment">0,00 €</div>
-                    </div>
-                    <div class="finance-card">
-                        <h3>Gesamtertrag</h3>
-                        <div class="finance-value" id="totalRevenue">0,00 €</div>
-                    </div>
-                    <div class="finance-card">
-                        <h3>Gesamtgewinn</h3>
-                        <div class="finance-value" id="totalProfit">0,00 €</div>
-                    </div>
-                    <div class="finance-card">
-                        <h3>Marge</h3>
-                        <div class="finance-value" id="totalMargin">0,00%</div>
-                    </div>
-                </div>
-
-                <div class="finance-details">
-                    <h3>Verkaufte Teile</h3>
-                    <div id="soldPartsTable" class="table-container">
-                        <!-- Sold parts table will be rendered here -->
-                    </div>
-                </div>
-            </section>
-        </div>
+        <!-- Finanzübersicht -->
+        <section id="finance" class="tab">
+            <h2>Finanzen</h2>
+            <div id="financeSummary"></div>
+        </section>
     </main>
 
-    <!-- Modal for adding/editing parts -->
-    <div id="partModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="partModalTitle">Teil hinzufügen</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <form id="partForm">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="partName">Name*</label>
-                        <input type="text" id="partName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="partCategory">Kategorie*</label>
-                        <select id="partCategory" required>
-                            <option value="">Kategorie wählen</option>
-                            <option value="CPU">CPU</option>
-                            <option value="GPU">GPU</option>
-                            <option value="RAM">RAM</option>
-                            <option value="Mainboard">Mainboard</option>
-                            <option value="Storage">Storage</option>
-                            <option value="PSU">Netzteil</option>
-                            <option value="Case">Gehäuse</option>
-                            <option value="Cooling">Kühlung</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="partBrand">Marke</label>
-                        <select id="partBrand">
-                            <option value="">Marke wählen</option>
-                            <option value="AMD">AMD</option>
-                            <option value="Intel">Intel</option>
-                            <option value="NVIDIA">NVIDIA</option>
-                            <option value="ASUS">ASUS</option>
-                            <option value="MSI">MSI</option>
-                            <option value="Gigabyte">Gigabyte</option>
-                            <option value="EVGA">EVGA</option>
-                            <option value="Corsair">Corsair</option>
-                            <option value="G.Skill">G.Skill</option>
-                            <option value="Samsung">Samsung</option>
-                            <option value="Western Digital">Western Digital</option>
-                            <option value="Seagate">Seagate</option>
-                            <option value="be quiet!">be quiet!</option>
-                            <option value="Seasonic">Seasonic</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="partPrice">Einkaufspreis (€)*</label>
-                        <input type="number" id="partPrice" step="0.01" min="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="partCondition">Zustand</label>
-                        <select id="partCondition">
-                            <option value="Neu">Neu</option>
-                            <option value="Wie neu">Wie neu</option>
-                            <option value="Sehr gut">Sehr gut</option>
-                            <option value="Gut">Gut</option>
-                            <option value="Akzeptabel">Akzeptabel</option>
-                            <option value="Defekt">Defekt</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="partPlatform">Einkaufsplattform</label>
-                        <select id="partPlatform">
-                            <option value="eBay">eBay</option>
-                            <option value="Amazon">Amazon</option>
-                            <option value="eBay Kleinanzeigen">eBay Kleinanzeigen</option>
-                            <option value="Hardwareluxx">Hardwareluxx</option>
-                            <option value="Reddit">Reddit</option>
-                            <option value="Lokal">Lokal</option>
-                            <option value="Sonstiges">Sonstiges</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="partPurchaseDate">Kaufdatum</label>
-                        <input type="date" id="partPurchaseDate">
-                    </div>
-                    <div class="form-group">
-                        <label for="partMarketValue">Aktueller Marktwert (€)</label>
-                        <input type="number" id="partMarketValue" step="0.01" min="0">
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelPartBtn">Abbrechen</button>
-                    <button type="submit" class="btn-primary">Speichern</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- Modale Dialoge -->
+    <div id="modal" class="modal hidden"></div>
 
-    <!-- Modal for selling parts -->
-    <div id="sellModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Teil verkaufen</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <form id="sellForm">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="sellPrice">Verkaufspreis (€)*</label>
-                        <input type="number" id="sellPrice" step="0.01" min="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="sellPlatform">Verkaufsplattform</label>
-                        <select id="sellPlatform">
-                            <option value="eBay">eBay</option>
-                            <option value="Amazon">Amazon</option>
-                            <option value="eBay Kleinanzeigen">eBay Kleinanzeigen</option>
-                            <option value="Hardwareluxx">Hardwareluxx</option>
-                            <option value="Reddit">Reddit</option>
-                            <option value="Lokal">Lokal</option>
-                            <option value="Sonstiges">Sonstiges</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="sellDate">Verkaufsdatum</label>
-                        <input type="date" id="sellDate">
-                    </div>
-                </div>
-                <div class="profit-preview">
-                    <div class="profit-item">
-                        <span>Einkaufspreis:</span>
-                        <span id="originalPrice">0,00 €</span>
-                    </div>
-                    <div class="profit-item">
-                        <span>Verkaufspreis:</span>
-                        <span id="previewSellPrice">0,00 €</span>
-                    </div>
-                    <div class="profit-item total">
-                        <span>Gewinn/Verlust:</span>
-                        <span id="previewProfit">0,00 €</span>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelSellBtn">Abbrechen</button>
-                    <button type="submit" class="btn-primary">Verkaufen</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal for builds -->
-    <div id="buildModal" class="modal">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h3 id="buildModalTitle">Build erstellen</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <form id="buildForm">
-                <div class="form-group">
-                    <label for="buildName">Build Name*</label>
-                    <input type="text" id="buildName" required>
-                </div>
-                
-                <div class="build-parts-section">
-                    <h4>Teile hinzufügen</h4>
-                    <div class="available-parts" id="availableParts">
-                        <!-- Available parts will be rendered here -->
-                    </div>
-                    
-                    <h4>Build Konfiguration</h4>
-                    <div class="build-configuration" id="buildConfiguration">
-                        <!-- Selected parts will be shown here -->
-                    </div>
-                    
-                    <div class="build-summary">
-                        <div class="summary-item">
-                            <span>Gesamtkosten:</span>
-                            <span id="buildTotalCost">0,00 €</span>
-                        </div>
-                        <div class="summary-item">
-                            <span>Geschätzter Verkaufspreis:</span>
-                            <span id="buildEstimatedPrice">0,00 €</span>
-                        </div>
-                        <div class="summary-item">
-                            <span>Erwarteter Gewinn:</span>
-                            <span id="buildExpectedProfit">0,00 €</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelBuildBtn">Abbrechen</button>
-                    <button type="submit" class="btn-primary">Build speichern</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Toast notifications -->
-    <div id="toast" class="toast"></div>
-
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
