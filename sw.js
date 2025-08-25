@@ -30,3 +30,66 @@ self.addEventListener('fetch', event => {
         )
     );
 });
+
+// GitHub API Integration (in app.js ergänzen)
+class GitHubSync {
+    constructor(token, repo, owner) {
+        this.token = token;
+        this.repo = repo;
+        this.owner = owner;
+        this.apiBase = 'https://api.github.com';
+    }
+
+    async saveToGitHub(data) {
+        const content = btoa(JSON.stringify(data, null, 2));
+        const url = `${this.apiBase}/repos/${this.owner}/${this.repo}/contents/data.json`;
+        
+        try {
+            // Aktuelle Datei laden für SHA
+            const currentFile = await fetch(url, {
+                headers: { 'Authorization': `token ${this.token}` }
+            });
+            
+            const sha = currentFile.ok ? (await currentFile.json()).sha : undefined;
+            
+            // Datei updaten
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${this.token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Update data ${new Date().toISOString()}`,
+                    content: content,
+                    sha: sha
+                })
+            });
+            
+            return response.ok;
+        } catch (error) {
+            console.error('GitHub sync error:', error);
+            return false;
+        }
+    }
+
+    async loadFromGitHub() {
+        const url = `${this.apiBase}/repos/${this.owner}/${this.repo}/contents/data.json`;
+        
+        try {
+            const response = await fetch(url, {
+                headers: { 'Authorization': `token ${this.token}` }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const content = atob(data.content);
+                return JSON.parse(content);
+            }
+        } catch (error) {
+            console.error('GitHub load error:', error);
+        }
+        
+        return null;
+    }
+}
