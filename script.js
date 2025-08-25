@@ -13,11 +13,9 @@ let currentBuildIndex = null;
 let editingItemIndex = null;
 let editingBuildIndex = null;
 let editingSaleIndex = null;
-let sellingItemIndex = null; // New global variable
+let sellingItemIndex = null; // Hinzugefügte Variable für das Einzelteil
 let currentBuildComponents = []; // To store components of the current build in the modal
 let activeCharts = {}; // To store Chart.js instances
-let currentInventorySort = { column: 'date', direction: 'desc' }; // Default sort for inventory
-let currentBuildsSort = 'name_asc'; // Default sort for builds
 
 // ===========================
 // INITIALIZATION
@@ -46,8 +44,7 @@ function checkRequiredElements() {
         'addItemModal', 'addBuildModal', 'selectComponentModal', 'sellBuildModal',
         'dataManagementModal', 'exportDataBtn', 'importDataBtn', 'importFile', 'clearDataBtn',
         'theme-toggle', 'qa-add-item', 'qa-add-build', 'combo-splitter-btn', 'comboSplitterModal',
-        'editSaleModal', 'brandChart', 'categoryChart', 'sellItemModal', // Added sellItemModal
-        'sort-builds', 'toast-container' // Added toast-container
+        'editSaleModal', 'sellItemModal', 'brandChart', 'categoryChart'
     ];
     
     return requiredIds.every(id => document.getElementById(id) !== null);
@@ -75,7 +72,7 @@ function saveData() {
         console.log('Daten gespeichert');
     } catch (e) {
         console.error('Fehler beim Speichern der Daten:', e);
-        showToast('Fehler beim Speichern der Daten!', 'error');
+        alert('Fehler beim Speichern der Daten!');
     }
 }
 
@@ -113,23 +110,6 @@ function updateChartColors() {
     }
 }
 
-// ===========================
-// NOTIFICATION SYSTEM (TOASTS)
-// ===========================
-
-function showToast(message, type = 'success') {
-    const toastContainer = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    toastContainer.appendChild(toast);
-    
-    // Auto-remove the toast after 3 seconds
-    setTimeout(() => {
-        toast.classList.add('hide');
-        toast.addEventListener('transitionend', () => toast.remove());
-    }, 3000);
-}
 
 // ===========================
 // NAVIGATION & UI MANAGEMENT
@@ -171,8 +151,8 @@ function setupEventListeners() {
 
     // Inventory page
     document.getElementById('add-item-btn').addEventListener('click', showAddItemModal);
-    document.getElementById('search-inventory').addEventListener('keyup', filterAndSortInventory); // Combined function
-    document.getElementById('filter-category').addEventListener('change', filterAndSortInventory); // Combined function
+    document.getElementById('search-inventory').addEventListener('keyup', filterAndSortInventory);
+    document.getElementById('filter-category').addEventListener('change', filterAndSortInventory);
     document.getElementById('addItemForm').addEventListener('submit', addOrUpdateInventoryItem);
     document.getElementById('combo-splitter-btn').addEventListener('click', showComboSplitterModal);
     document.querySelectorAll('#inventory-table th[data-sort]').forEach(header => {
@@ -188,8 +168,14 @@ function setupEventListeners() {
     document.getElementById('editSaleForm').addEventListener('submit', addOrUpdateSale);
     
     // Sell Item Modal
-    document.getElementById('sellItemForm').addEventListener('submit', sellInventoryItem);
-
+    const sellItemForm = document.getElementById('sellItemForm');
+    if (sellItemForm) {
+        sellItemForm.addEventListener('submit', sellInventoryItem);
+        console.log('Event Listener für sellItemForm erfolgreich hinzugefügt.');
+    } else {
+        console.error('FEHLER: sellItemForm Element nicht gefunden!');
+    }
+    
     // Combo Splitter
     document.getElementById('split-price-btn').addEventListener('click', splitComboPrice);
 
@@ -359,7 +345,7 @@ function updateRecentActivity() {
             type: 'build'
         })),
         ...sales.slice(-2).map(sale => ({
-            text: `"${sale.buildName || sale.itemName}" verkauft für ${parseFloat(sale.soldPrice).toFixed(2)}€`,
+            text: `"${sale.buildName}" verkauft für ${parseFloat(sale.soldPrice).toFixed(2)}€`,
             date: new Date(sale.date),
             type: 'sale'
         }))
@@ -381,7 +367,7 @@ function updateRecentActivity() {
 }
 
 // ===========================
-// INVENTORY FUNCTIONS - FULL CRUD & SORT/FILTER
+// INVENTORY FUNCTIONS - FULL CRUD
 // ===========================
 
 function getStatusText(status) {
@@ -394,8 +380,88 @@ function getStatusText(status) {
 }
 
 function loadInventory() {
-    filterAndSortInventory();
+    const tbody = document.getElementById('inventory-tbody');
+    if (!tbody) return;
+    
+    if (inventory.length === 0) {
+        tbody.innerHTML = '<tr class="no-data"><td colspan="8">Keine Komponenten im Inventar</td></tr>';
+        return;
+    }
+    
+    const tableHeaders = document.querySelectorAll('#inventory-table th[data-sort]');
+    tableHeaders.forEach(header => {
+        header.querySelector('i')?.remove();
+    });
+    
+    const sortedInventory = [...inventory].sort(sortInventoryData);
+
+    tbody.innerHTML = sortedInventory.map((item, index) => `
+        <tr>
+            <td>${item.category || 'N/A'}</td>
+            <td>${item.brand || 'N/A'}</td>
+            <td>${item.model || 'N/A'}</td>
+            <td>${(parseFloat(item.price) || 0).toFixed(2)}€</td>
+            <td>${item.date ? new Date(item.date).toLocaleDateString('de-DE') : 'N/A'}</td>
+            <td>${item.source || 'N/A'}</td>
+            <td><span class="status-${item.status || 'available'}">${getStatusText(item.status || 'available')}</span></td>
+            <td>
+                <button class="btn-primary" data-action="sell-item" data-index="${index}">Verkaufen</button>
+                <button class="btn-primary" data-action="edit-item" data-index="${index}">Bearbeiten</button>
+                <button class="btn-danger" data-action="delete-item" data-index="${index}">Löschen</button>
+            </td>
+        </tr>
+    `).join('');
+    
+    // Add event listeners for new buttons
+    tbody.querySelectorAll('[data-action]').forEach(btn => {
+        const index = parseInt(btn.dataset.index);
+        const action = btn.dataset.action;
+        if (action === 'sell-item') {
+            btn.addEventListener('click', () => showSellItemModal(index));
+        } else if (action === 'edit-item') {
+            btn.addEventListener('click', () => editInventoryItem(index));
+        } else if (action === 'delete-item') {
+            btn.addEventListener('click', () => deleteInventoryItem(index));
+        }
+    });
 }
+
+let sortDirection = {};
+
+function sortInventoryData(a, b) {
+    const column = sortDirection.column;
+    const direction = sortDirection.direction;
+    if (!column || !direction) return 0;
+
+    const valA = a[column];
+    const valB = b[column];
+
+    let result;
+    if (typeof valA === 'string') {
+        result = valA.localeCompare(valB);
+    } else {
+        result = valA - valB;
+    }
+
+    return direction === 'asc' ? result : -result;
+}
+
+function sortInventory(event) {
+    const column = event.target.dataset.sort;
+    if (!column) return;
+
+    const currentDirection = sortDirection.column === column && sortDirection.direction === 'asc' ? 'desc' : 'asc';
+    sortDirection = { column, direction: currentDirection };
+
+    // Update arrows
+    document.querySelectorAll('#inventory-table th[data-sort] i').forEach(icon => icon.remove());
+    const arrow = document.createElement('i');
+    arrow.className = `fas fa-sort-${currentDirection}`;
+    event.target.appendChild(arrow);
+
+    loadInventory();
+}
+
 
 function filterAndSortInventory() {
     const searchInput = document.getElementById('search-inventory');
@@ -414,24 +480,15 @@ function filterAndSortInventory() {
         return matchesSearch && matchesCategory;
     });
 
-    sortData(filteredInventory, currentInventorySort.column, currentInventorySort.direction);
-    
-    if (filteredInventory.length === 0) {
+    const sortedFilteredInventory = [...filteredInventory].sort(sortInventoryData);
+
+    if (sortedFilteredInventory.length === 0) {
         tbody.innerHTML = '<tr class="no-data"><td colspan="8">Keine passenden Komponenten gefunden</td></tr>';
         return;
     }
     
-    tbody.innerHTML = filteredInventory.map(item => {
+    tbody.innerHTML = sortedFilteredInventory.map((item) => {
         const originalIndex = inventory.findIndex(inv => inv.id === item.id);
-        const actions = item.status === 'available' ? `
-            <button class="btn-primary" data-action="edit-item" data-index="${originalIndex}">Bearbeiten</button>
-            <button class="btn-success" data-action="sell-item" data-index="${originalIndex}">Verkaufen</button>
-            <button class="btn-danger" data-action="delete-item" data-index="${originalIndex}">Löschen</button>
-        ` : `
-            <button class="btn-primary" data-action="edit-item" data-index="${originalIndex}">Bearbeiten</button>
-            <button class="btn-danger" data-action="delete-item" data-index="${originalIndex}">Löschen</button>
-        `;
-
         return `
             <tr>
                 <td>${item.category || 'N/A'}</td>
@@ -442,49 +499,27 @@ function filterAndSortInventory() {
                 <td>${item.source || 'N/A'}</td>
                 <td><span class="status-${item.status || 'available'}">${getStatusText(item.status || 'available')}</span></td>
                 <td>
-                    ${actions}
+                    <button class="btn-primary" data-action="sell-item" data-index="${originalIndex}">Verkaufen</button>
+                    <button class="btn-primary" data-action="edit-item" data-index="${originalIndex}">Bearbeiten</button>
+                    <button class="btn-danger" data-action="delete-item" data-index="${originalIndex}">Löschen</button>
                 </td>
             </tr>
         `;
     }).join('');
-    
+
     tbody.querySelectorAll('[data-action]').forEach(btn => {
         const index = parseInt(btn.dataset.index);
         const action = btn.dataset.action;
-        if (action === 'edit-item') {
+        if (action === 'sell-item') {
+            btn.addEventListener('click', () => showSellItemModal(index));
+        } else if (action === 'edit-item') {
             btn.addEventListener('click', () => editInventoryItem(index));
         } else if (action === 'delete-item') {
             btn.addEventListener('click', () => deleteInventoryItem(index));
-        } else if (action === 'sell-item') {
-            btn.addEventListener('click', () => showSellItemModal(index));
         }
     });
-    updateSortIcons();
 }
 
-function sortInventory(event) {
-    const column = event.target.dataset.sort;
-    if (!column) return;
-
-    if (currentInventorySort.column === column) {
-        currentInventorySort.direction = currentInventorySort.direction === 'asc' ? 'desc' : 'asc';
-    } else {
-        currentInventorySort.column = column;
-        currentInventorySort.direction = 'asc';
-    }
-
-    filterAndSortInventory();
-}
-
-function updateSortIcons() {
-    document.querySelectorAll('#inventory-table th .sort-icon').forEach(icon => {
-        icon.textContent = '';
-    });
-    const header = document.querySelector(`#inventory-table th[data-sort="${currentInventorySort.column}"]`);
-    if (header) {
-        header.querySelector('.sort-icon').textContent = currentInventorySort.direction === 'asc' ? '▲' : '▼';
-    }
-}
 
 function showAddItemModal() {
     editingItemIndex = null;
@@ -510,7 +545,6 @@ function editInventoryItem(index) {
     document.getElementById('item-price').value = item.price || '';
     document.getElementById('item-date').value = item.date || '';
     document.getElementById('item-source').value = item.source || '';
-    
     document.getElementById('item-status-field').style.display = 'block';
     document.getElementById('item-status').value = item.status || 'available';
     modal.style.display = 'block';
@@ -528,6 +562,7 @@ function addOrUpdateInventoryItem(event) {
             date: form['item-date'].value,
             source: form['item-source'].value
         };
+
         if (editingItemIndex !== null) {
             const oldStatus = inventory[editingItemIndex].status;
             const newStatus = form['item-status'].value;
@@ -550,6 +585,7 @@ function addOrUpdateInventoryItem(event) {
             inventory.push(newItem);
             showToast('Komponente erfolgreich hinzugefügt!', 'success');
         }
+
         saveData();
         closeModal('addItemModal');
         loadInventory();
@@ -582,19 +618,32 @@ function deleteInventoryItem(index) {
 function showSellItemModal(index) {
     sellingItemIndex = index;
     const item = inventory[index];
-    document.getElementById('sellItemInfo').innerHTML = `
-        <p><strong>Komponente:</strong> ${item.brand} ${item.model}</p>
-        <p><strong>Einkaufspreis:</strong> ${parseFloat(item.price).toFixed(2)}€</p>
+    if (!item) return;
+
+    const modal = document.getElementById('sellItemModal');
+    const infoDiv = document.getElementById('sellItemInfo');
+    const form = document.getElementById('sellItemForm');
+
+    infoDiv.innerHTML = `
+        <p><strong>Komponente:</strong> ${item.category} ${item.brand} ${item.model}</p>
+        <p><strong>Einkaufspreis:</strong> ${(parseFloat(item.price) || 0).toFixed(2)}€</p>
     `;
+
+    form.reset();
     document.getElementById('item-sale-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('sellItemForm').reset();
-    document.getElementById('sellItemModal').style.display = 'block';
+    modal.style.display = 'block';
 }
 
 function sellInventoryItem(event) {
-    event.preventDefault();
+    event.preventDefault(); // Diese Zeile verhindert, dass das Formular die Seite neu lädt
+    console.log('Verkaufen-Funktion wird ausgeführt...');
+
     const item = inventory[sellingItemIndex];
-    if (!item) return;
+    if (!item) {
+        console.error('Kein Item zum Verkaufen gefunden.');
+        showToast('Fehler: Komponente nicht gefunden.', 'error');
+        return;
+    }
 
     const salePrice = parseFloat(document.getElementById('item-sale-price').value);
     const saleBuyer = document.getElementById('item-sale-buyer').value;
@@ -627,8 +676,10 @@ function sellInventoryItem(event) {
     loadInventory();
     loadSales();
     updateDashboard();
-    showToast('Komponente erfolgreich als Einzelteil verkauft!', 'success'); // Subtle change here
+    showToast('Komponente erfolgreich als Einzelteil verkauft!', 'success');
+    console.log('Verkauf erfolgreich abgeschlossen.');
 }
+
 
 // ===========================
 // BUILD FUNCTIONS - FULL CRUD
@@ -637,48 +688,18 @@ function sellInventoryItem(event) {
 function loadBuilds() {
     const buildsGrid = document.getElementById('builds-grid');
     if (!buildsGrid) return;
-    
-    // Sort builds based on the current selection
-    const sortSelect = document.getElementById('sort-builds');
-    currentBuildsSort = sortSelect.value;
-    
-    const sortedBuilds = [...builds];
-    
-    switch (currentBuildsSort) {
-        case 'name_asc':
-            sortedBuilds.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-            break;
-        case 'name_desc':
-            sortedBuilds.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
-            break;
-        case 'cost_asc':
-            sortedBuilds.sort((a, b) => {
-                const costA = (a.components || []).reduce((sum, comp) => sum + (parseFloat(comp.price) || 0), 0);
-                const costB = (b.components || []).reduce((sum, comp) => sum + (parseFloat(comp.price) || 0), 0);
-                return costA - costB;
-            });
-            break;
-        case 'cost_desc':
-            sortedBuilds.sort((a, b) => {
-                const costA = (a.components || []).reduce((sum, comp) => sum + (parseFloat(comp.price) || 0), 0);
-                const costB = (b.components || []).reduce((sum, comp) => sum + (parseFloat(comp.price) || 0), 0);
-                return costB - costA;
-            });
-            break;
-        case 'target_asc':
-            sortedBuilds.sort((a, b) => (parseFloat(a.targetPrice) || 0) - (parseFloat(b.targetPrice) || 0));
-            break;
-        case 'target_desc':
-            sortedBuilds.sort((a, b) => (parseFloat(b.targetPrice) || 0) - (parseFloat(a.targetPrice) || 0));
-            break;
-    }
 
-    if (sortedBuilds.length === 0) {
-        buildsGrid.innerHTML = '<div class="no-data">Noch keine Builds erstellt</div>';
+    const filteredBuilds = builds.filter(build => {
+        const status = document.getElementById('sort-builds')?.value || 'all';
+        return status === 'all' || build.status === status;
+    });
+
+    if (filteredBuilds.length === 0) {
+        buildsGrid.innerHTML = '<div class="no-data">Keine Builds gefunden</div>';
         return;
     }
     
-    buildsGrid.innerHTML = sortedBuilds.map((build, index) => {
+    buildsGrid.innerHTML = filteredBuilds.map((build, index) => {
         const components = build.components || [];
         const totalCost = components.reduce((sum, comp) => sum + (parseFloat(comp.price) || 0), 0);
         return `
@@ -707,7 +728,7 @@ function loadBuilds() {
                     ${components.length > 0 ? components.map(comp => `
                         <div class="component-item" style="display: flex; justify-content: space-between; align-items: center;">
                             <span>${comp.category || 'N/A'}: ${comp.brand || ''} ${comp.model || ''}</span>
-                            ${build.status === 'building' ? `<button class="btn-danger remove-component" data-build-index="${index}" data-component-id="${comp.id}">×</button>` : ''}
+                            ${build.status === 'building' ? `<button class="btn-danger" data-build-index="${index}" data-component-id="${comp.id}">×</button>` : ''}
                         </div>
                     `).join('') : '<p class="no-data" style="font-size: 0.9rem; margin: 0.5rem 0;">Noch keine Komponenten hinzugefügt</p>'}
                 </div>
@@ -737,12 +758,10 @@ function loadBuilds() {
         }
     });
 
-    buildsGrid.querySelectorAll('.remove-component').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const buildIndex = parseInt(this.dataset.buildIndex);
-            const componentId = parseInt(this.dataset.componentId);
-            removeComponentFromBuild(buildIndex, componentId);
-        });
+    buildsGrid.querySelectorAll('.component-item button').forEach(btn => {
+        const buildIndex = parseInt(btn.dataset.buildIndex);
+        const componentId = parseInt(btn.dataset.componentId);
+        btn.addEventListener('click', () => removeComponentFromBuild(buildIndex, componentId));
     });
 }
 
@@ -750,7 +769,6 @@ function showAddBuildModal() {
     editingBuildIndex = null;
     const modal = document.getElementById('addBuildModal');
     modal.querySelector('h3').textContent = 'Neuen Build starten';
-    modal.querySelector('.btn-primary[type="submit"]').textContent = 'Erstellen';
     document.getElementById('addBuildForm').reset();
     modal.style.display = 'block';
 }
@@ -759,33 +777,28 @@ function addOrUpdateBuild(event) {
     event.preventDefault();
     try {
         const form = document.getElementById('addBuildForm');
-        const buildName = form['build-name'].value;
-        const buildBudget = parseFloat(form['build-budget'].value) || 0;
-        const buildTargetPrice = parseFloat(form['build-target-price'].value);
-        const buildImageUrl = form['build-image-url'].value;
-        
+        const buildData = {
+            name: form['build-name'].value,
+            budget: parseFloat(form['build-budget'].value) || 0,
+            targetPrice: parseFloat(form['build-target-price'].value),
+            imageUrl: form['build-image'].value,
+        };
+
         if (editingBuildIndex !== null) {
-            const build = builds[editingBuildIndex];
-            build.name = buildName;
-            build.budget = buildBudget;
-            build.targetPrice = buildTargetPrice;
-            build.imageUrl = buildImageUrl;
+            builds[editingBuildIndex] = { ...builds[editingBuildIndex], ...buildData };
             showToast('Build erfolgreich aktualisiert!', 'success');
         } else {
             const newBuild = {
                 id: Date.now(),
-                name: buildName,
-                created: new Date().toISOString().split('T')[0],
-                budget: buildBudget,
-                targetPrice: buildTargetPrice,
-                imageUrl: buildImageUrl,
+                ...buildData,
                 status: 'building',
-                components: []
+                components: [],
+                created: new Date().toISOString().split('T')[0]
             };
             builds.push(newBuild);
-            showToast('Neuer Build erfolgreich erstellt!', 'success');
+            showToast('Build erfolgreich erstellt!', 'success');
         }
-        
+
         saveData();
         closeModal('addBuildModal');
         loadBuilds();
@@ -800,86 +813,119 @@ function editBuild(index) {
     const build = builds[index];
     const modal = document.getElementById('addBuildModal');
     modal.querySelector('h3').textContent = 'Build bearbeiten';
-    modal.querySelector('.btn-primary[type="submit"]').textContent = 'Speichern';
     
     document.getElementById('build-name').value = build.name || '';
     document.getElementById('build-budget').value = build.budget || '';
     document.getElementById('build-target-price').value = build.targetPrice || '';
-    document.getElementById('build-image-url').value = build.imageUrl || '';
+    document.getElementById('build-image').value = build.imageUrl || '';
+    
     modal.style.display = 'block';
 }
 
 function deleteBuild(index) {
-    if (confirm(`Sind Sie sicher, dass Sie den Build "${builds[index].name}" unwiderruflich löschen wollen?`)) {
-        try {
-            // Restore components to inventory with 'available' status
-            (builds[index].components || []).forEach(comp => {
-                const originalItem = inventory.find(item => item.id === comp.id);
-                if (originalItem) {
-                    originalItem.status = 'available';
-                }
-            });
-
-            builds.splice(index, 1);
-            saveData();
-            loadBuilds();
-            loadInventory();
-            updateDashboard();
-            showToast('Build erfolgreich gelöscht!', 'success');
-        } catch (e) {
-            console.error('Fehler beim Löschen des Builds:', e);
-            showToast('Fehler beim Löschen des Builds!', 'error');
-        }
+    if (confirm(`Sicher, dass Sie den Build "${builds[index].name}" löschen wollen?`)) {
+        // Return components to inventory
+        builds[index].components.forEach(comp => {
+            const originalItem = inventory.find(item => item.id === comp.id);
+            if (originalItem) {
+                originalItem.status = 'available';
+            }
+        });
+        builds.splice(index, 1);
+        saveData();
+        loadBuilds();
+        loadInventory();
+        showToast('Build erfolgreich gelöscht!', 'success');
     }
 }
 
 function showSelectComponentModal(buildIndex) {
     currentBuildIndex = buildIndex;
-    const tbody = document.getElementById('select-component-tbody');
+    const modal = document.getElementById('selectComponentModal');
+    const tbody = document.getElementById('component-selection-tbody');
+
     const availableItems = inventory.filter(item => item.status === 'available');
-    
+
     if (availableItems.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">Keine verfügbaren Komponenten im Inventar.</td></tr>';
-        document.getElementById('selectComponentModal').style.display = 'block';
+        tbody.innerHTML = '<tr class="no-data"><td colspan="5">Keine verfügbaren Komponenten im Inventar</td></tr>';
+    } else {
+        tbody.innerHTML = availableItems.map(item => `
+            <tr>
+                <td><input type="checkbox" data-item-id="${item.id}" name="selected-components"></td>
+                <td>${item.category || 'N/A'}</td>
+                <td>${item.brand || 'N/A'}</td>
+                <td>${item.model || 'N/A'}</td>
+                <td>${(parseFloat(item.price) || 0).toFixed(2)}€</td>
+            </tr>
+        `).join('');
+    }
+
+    // Event listener for search and filter in the modal
+    document.getElementById('search-component').addEventListener('keyup', filterComponentsForModal);
+    document.getElementById('filter-component-category').addEventListener('change', filterComponentsForModal);
+
+    // Event listener for adding selected components
+    document.getElementById('addComponentToBuildBtn').onclick = addSelectedComponentsToBuild;
+
+    modal.style.display = 'block';
+}
+
+function filterComponentsForModal() {
+    const searchInput = document.getElementById('search-component');
+    const categoryFilter = document.getElementById('filter-component-category');
+    const tbody = document.getElementById('component-selection-tbody');
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const categoryFilterValue = categoryFilter.value;
+
+    const filteredItems = inventory.filter(item => {
+        const matchesSearch = (item.brand || '').toLowerCase().includes(searchTerm) || 
+                            (item.model || '').toLowerCase().includes(searchTerm);
+        const matchesCategory = !categoryFilterValue || item.category === categoryFilterValue;
+        const isAvailable = item.status === 'available';
+        return matchesSearch && matchesCategory && isAvailable;
+    });
+
+    if (filteredItems.length === 0) {
+        tbody.innerHTML = '<tr class="no-data"><td colspan="5">Keine passenden Komponenten gefunden</td></tr>';
         return;
     }
-    
-    tbody.innerHTML = availableItems.map(item => `
+
+    tbody.innerHTML = filteredItems.map(item => `
         <tr>
+            <td><input type="checkbox" data-item-id="${item.id}" name="selected-components"></td>
             <td>${item.category || 'N/A'}</td>
             <td>${item.brand || 'N/A'}</td>
             <td>${item.model || 'N/A'}</td>
             <td>${(parseFloat(item.price) || 0).toFixed(2)}€</td>
-            <td><button class="btn-primary" onclick="addComponentToBuild(${item.id})">Auswählen</button></td>
         </tr>
     `).join('');
-    
-    document.getElementById('selectComponentModal').style.display = 'block';
 }
 
-function addComponentToBuild(itemId) {
-    const item = inventory.find(i => i.id === itemId);
+
+function addSelectedComponentsToBuild() {
+    const checkboxes = document.querySelectorAll('#component-selection-tbody input[type="checkbox"]:checked');
     const build = builds[currentBuildIndex];
-    if (item && build) {
-        build.components.push({
-            id: item.id,
-            category: item.category,
-            brand: item.brand,
-            model: item.model,
-            price: item.price
-        });
-        item.status = 'used';
-        saveData();
-        closeModal('selectComponentModal');
-        loadBuilds();
-        loadInventory();
-        showToast('Komponente erfolgreich zum Build hinzugefügt!', 'success');
-    }
+
+    checkboxes.forEach(checkbox => {
+        const itemId = parseInt(checkbox.dataset.itemId);
+        const item = inventory.find(i => i.id === itemId);
+        if (item) {
+            build.components.push(item);
+            item.status = 'used';
+        }
+    });
+
+    saveData();
+    closeModal('selectComponentModal');
+    loadBuilds();
+    loadInventory();
+    showToast('Komponenten erfolgreich zum Build hinzugefügt!', 'success');
 }
 
 function removeComponentFromBuild(buildIndex, componentId) {
     const build = builds[buildIndex];
-    if (build) {
+    if (build && build.status === 'building') {
         const componentIndex = build.components.findIndex(comp => comp.id === componentId);
         if (componentIndex > -1) {
             const removedComponent = build.components.splice(componentIndex, 1)[0];
@@ -890,53 +936,70 @@ function removeComponentFromBuild(buildIndex, componentId) {
             saveData();
             loadBuilds();
             loadInventory();
-            showToast('Komponente erfolgreich aus dem Build entfernt!', 'success');
+            showToast('Komponente erfolgreich aus Build entfernt!', 'success');
         }
     }
 }
 
 function showSellBuildModal(buildIndex) {
     currentBuildForSale = builds[buildIndex];
-    document.getElementById('sellBuildForm').reset();
-    document.getElementById('sale-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('sellBuildModal').style.display = 'block';
+    if (!currentBuildForSale) return;
+
+    const modal = document.getElementById('sellBuildModal');
+    const infoDiv = document.getElementById('sellBuildInfo');
+    const form = document.getElementById('sellBuildForm');
+
+    const totalCost = currentBuildForSale.components.reduce((sum, comp) => sum + (parseFloat(comp.price) || 0), 0);
+    const targetPrice = parseFloat(currentBuildForSale.targetPrice) || 0;
+
+    infoDiv.innerHTML = `
+        <p><strong>Build:</strong> ${currentBuildForSale.name}</p>
+        <p><strong>Gesamtkosten:</strong> ${totalCost.toFixed(2)}€</p>
+        <p><strong>Zielpreis:</strong> ${targetPrice.toFixed(2)}€</p>
+    `;
+
+    form.reset();
+    document.getElementById('build-sale-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('build-sale-price').value = targetPrice > 0 ? targetPrice.toFixed(2) : '';
+
+    modal.style.display = 'block';
 }
 
 function sellBuild(event) {
     event.preventDefault();
-    const salePrice = parseFloat(document.getElementById('sale-price').value);
-    const buyer = document.getElementById('sale-buyer').value;
-    const saleDate = document.getElementById('sale-date').value;
-    
+
+    const build = currentBuildForSale;
+    if (!build) {
+        showToast('Fehler: Build zum Verkaufen nicht gefunden.', 'error');
+        return;
+    }
+
+    const salePrice = parseFloat(document.getElementById('build-sale-price').value);
+    const saleBuyer = document.getElementById('build-sale-buyer').value;
+    const saleDate = document.getElementById('build-sale-date').value;
+
     if (isNaN(salePrice) || salePrice <= 0) {
         showToast('Bitte einen gültigen Verkaufspreis eingeben.', 'error');
         return;
     }
 
-    const totalCost = (currentBuildForSale.components || []).reduce((sum, comp) => sum + (parseFloat(comp.price) || 0), 0);
+    const totalCost = build.components.reduce((sum, comp) => sum + (parseFloat(comp.price) || 0), 0);
     const netProfit = salePrice - totalCost;
-    
-    // Create new sale entry
+
     const newSale = {
         id: Date.now(),
-        buildName: currentBuildForSale.name,
-        buildCost: totalCost,
+        type: 'Build',
+        buildName: build.name,
+        itemCost: totalCost,
         soldPrice: salePrice,
         netProfit: netProfit,
         date: saleDate,
-        buyer: buyer
+        buyer: saleBuyer,
+        notes: ''
     };
-    
-    // Update build and component statuses
-    currentBuildForSale.status = 'sold';
-    currentBuildForSale.components.forEach(comp => {
-        const item = inventory.find(i => i.id === comp.id);
-        if (item) {
-            item.status = 'sold';
-        }
-    });
 
     sales.push(newSale);
+    build.status = 'sold';
     saveData();
     closeModal('sellBuildModal');
     loadBuilds();
@@ -944,6 +1007,7 @@ function sellBuild(event) {
     updateDashboard();
     showToast('Build erfolgreich verkauft!', 'success');
 }
+
 
 // ===========================
 // SALES FUNCTIONS
@@ -958,55 +1022,68 @@ function loadSales() {
         return;
     }
     
-    tbody.innerHTML = sales.map((sale, index) => {
-        const profitClass = sale.netProfit >= 0 ? 'profit' : 'loss';
-        const cost = sale.type === 'Einzelteil' ? sale.itemCost : sale.buildCost;
-        const name = sale.type === 'Einzelteil' ? sale.itemName : sale.buildName;
-        return `
-            <tr>
-                <td>${name || 'N/A'}</td>
-                <td>${(parseFloat(sale.soldPrice) || 0).toFixed(2)}€</td>
-                <td>${(parseFloat(cost) || 0).toFixed(2)}€</td>
-                <td><span class="${profitClass}">${(parseFloat(sale.netProfit) || 0).toFixed(2)}€</span></td>
-                <td>${sale.date ? new Date(sale.date).toLocaleDateString('de-DE') : 'N/A'}</td>
-                <td>${sale.buyer || 'N/A'}</td>
-                <td>
-                    <button class="btn-primary" data-action="edit-sale" data-index="${index}">Bearbeiten</button>
-                    <button class="btn-danger" data-action="delete-sale" data-index="${index}">Löschen</button>
-                </td>
-            </tr>
-        `;
-    }).join('');
+    tbody.innerHTML = sales.map((sale, index) => `
+        <tr>
+            <td>${sale.buildName || sale.itemName || 'N/A'}</td>
+            <td>${(parseFloat(sale.soldPrice) || 0).toFixed(2)}€</td>
+            <td>${(parseFloat(sale.itemCost) || 0).toFixed(2)}€</td>
+            <td class="${sale.netProfit >= 0 ? 'profit' : 'loss'}">${(parseFloat(sale.netProfit) || 0).toFixed(2)}€</td>
+            <td>${sale.date ? new Date(sale.date).toLocaleDateString('de-DE') : 'N/A'}</td>
+            <td>${sale.buyer || 'N/A'}</td>
+            <td>
+                <button class="btn-primary" data-action="edit-sale" data-index="${index}">Bearbeiten</button>
+                <button class="btn-danger" data-action="delete-sale" data-index="${index}">Löschen</button>
+            </td>
+        </tr>
+    `).join('');
     
-    tbody.querySelectorAll('[data-action]').forEach(btn => {
+    tbody.querySelectorAll('[data-action="edit-sale"]').forEach(btn => {
         const index = parseInt(btn.dataset.index);
-        const action = btn.dataset.action;
-        if (action === 'edit-sale') {
-            btn.addEventListener('click', () => editSale(index));
-        } else if (action === 'delete-sale') {
-            btn.addEventListener('click', () => deleteSale(index));
-        }
+        btn.addEventListener('click', () => editSale(index));
+    });
+    
+    tbody.querySelectorAll('[data-action="delete-sale"]').forEach(btn => {
+        const index = parseInt(btn.dataset.index);
+        btn.addEventListener('click', () => deleteSale(index));
     });
 }
 
 function editSale(index) {
     editingSaleIndex = index;
     const sale = sales[index];
-    document.getElementById('edit-sale-price').value = sale.soldPrice || '';
-    document.getElementById('edit-sale-buyer').value = sale.buyer || '';
-    document.getElementById('edit-sale-date').value = sale.date || '';
-    document.getElementById('editSaleModal').style.display = 'block';
+    const modal = document.getElementById('editSaleModal');
+
+    document.getElementById('sale-item-name').value = sale.buildName || sale.itemName || '';
+    document.getElementById('sale-cost').value = (parseFloat(sale.itemCost) || 0).toFixed(2);
+    document.getElementById('sale-price').value = (parseFloat(sale.soldPrice) || 0).toFixed(2);
+    document.getElementById('sale-date').value = sale.date || '';
+    document.getElementById('sale-buyer').value = sale.buyer || '';
+    document.getElementById('sale-notes').value = sale.notes || '';
+
+    modal.style.display = 'block';
 }
 
 function addOrUpdateSale(event) {
     event.preventDefault();
+    const form = document.getElementById('editSaleForm');
     const sale = sales[editingSaleIndex];
-    sale.soldPrice = parseFloat(document.getElementById('edit-sale-price').value);
-    sale.buyer = document.getElementById('edit-sale-buyer').value;
-    sale.date = document.getElementById('edit-sale-date').value;
 
-    const cost = sale.type === 'Einzelteil' ? sale.itemCost : sale.buildCost;
-    sale.netProfit = sale.soldPrice - cost;
+    if (!sale) {
+        showToast('Fehler: Verkauf nicht gefunden.', 'error');
+        return;
+    }
+
+    const newPrice = parseFloat(form['sale-price'].value);
+    const newDate = form['sale-date'].value;
+    const newBuyer = form['sale-buyer'].value;
+    const newNotes = form['sale-notes'].value;
+    const cost = parseFloat(sale.itemCost);
+
+    sale.soldPrice = newPrice;
+    sale.date = newDate;
+    sale.buyer = newBuyer;
+    sale.notes = newNotes;
+    sale.netProfit = newPrice - cost;
 
     saveData();
     closeModal('editSaleModal');
@@ -1016,75 +1093,95 @@ function addOrUpdateSale(event) {
 }
 
 function deleteSale(index) {
-    if (confirm('Verkaufseintrag wirklich löschen?')) {
-        try {
-            sales.splice(index, 1);
-            saveData();
-            loadSales();
-            updateDashboard();
-            showToast('Verkauf erfolgreich gelöscht!', 'success');
-        } catch (e) {
-            console.error('Fehler beim Löschen des Verkaufs:', e);
-            showToast('Fehler beim Löschen des Verkaufs!', 'error');
-        }
+    if (confirm('Sicher, dass Sie diesen Verkauf löschen wollen?')) {
+        sales.splice(index, 1);
+        saveData();
+        loadSales();
+        updateDashboard();
+        showToast('Verkauf erfolgreich gelöscht!', 'success');
     }
 }
+
 
 // ===========================
 // COMBO SPLITTER
 // ===========================
 
 function showComboSplitterModal() {
-    const list = document.getElementById('combo-inventory-list');
+    const modal = document.getElementById('comboSplitterModal');
+    const listDiv = document.getElementById('combo-inventory-list');
+    
     const availableItems = inventory.filter(item => item.status === 'available');
 
     if (availableItems.length === 0) {
-        list.innerHTML = '<p class="no-data">Keine verfügbaren Komponenten im Inventar.</p>';
-        document.getElementById('comboSplitterModal').style.display = 'block';
-        return;
+        listDiv.innerHTML = '<p class="no-data">Keine verfügbaren Komponenten zum Aufteilen</p>';
+        showToast('Keine Komponenten im Inventar, um einen Kombo-Splitter zu verwenden.', 'error');
+    } else {
+        listDiv.innerHTML = availableItems.map(item => `
+            <div class="combo-item" style="padding: 0.5rem 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <span>${item.category} ${item.brand} ${item.model}</span>
+                <input type="checkbox" data-item-id="${item.id}" name="combo-items">
+            </div>
+        `).join('');
     }
     
-    list.innerHTML = availableItems.map(item => `
-        <div class="combo-item-entry">
-            <input type="checkbox" id="combo-item-${item.id}" data-id="${item.id}">
-            <label for="combo-item-${item.id}">${item.brand} ${item.model}</label>
-        </div>
-    `).join('');
-    
-    document.getElementById('comboSplitterModal').style.display = 'block';
+    document.getElementById('combo-total-price').value = '';
+    modal.style.display = 'block';
 }
 
 function splitComboPrice() {
     const totalComboPrice = parseFloat(document.getElementById('combo-total-price').value);
-    const selectedItems = Array.from(document.querySelectorAll('#combo-inventory-list input:checked'))
-                            .map(input => inventory.find(item => item.id === parseInt(input.dataset.id)));
-
-    if (isNaN(totalComboPrice) || selectedItems.length === 0) {
-        showToast('Bitte einen Gesamtpreis eingeben und mindestens eine Komponente auswählen.', 'error');
+    const checkboxes = document.querySelectorAll('#combo-inventory-list input[type="checkbox"]:checked');
+    
+    if (isNaN(totalComboPrice) || totalComboPrice <= 0) {
+        showToast('Bitte einen gültigen Gesamtpreis eingeben.', 'error');
+        return;
+    }
+    
+    if (checkboxes.length === 0) {
+        showToast('Bitte wählen Sie mindestens eine Komponente aus.', 'error');
         return;
     }
 
-    const totalEstimatedPrice = selectedItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
-
-    if (totalEstimatedPrice === 0) {
-        showToast('Die ausgewählten Komponenten haben keinen Einkaufspreis. Kann nicht aufgeteilt werden.', 'error');
+    const selectedItemIds = Array.from(checkboxes).map(cb => parseInt(cb.dataset.itemId));
+    const selectedItems = inventory.filter(item => selectedItemIds.includes(item.id));
+    
+    // Calculate the old total price of selected items
+    const oldTotalPrice = selectedItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+    
+    if (oldTotalPrice === 0) {
+        showToast('Die ausgewählten Komponenten haben einen Gesamtwert von 0. Der Preis kann nicht aufgeteilt werden.', 'error');
         return;
     }
 
+    // Calculate the scaling factor
+    const scalingFactor = totalComboPrice / oldTotalPrice;
+
+    // Update the price of each selected item
     selectedItems.forEach(item => {
-        const newPrice = (parseFloat(item.price) / totalEstimatedPrice) * totalComboPrice;
-        item.price = newPrice.toFixed(2);
+        item.price = (parseFloat(item.price) * scalingFactor).toFixed(2);
     });
 
     saveData();
     closeModal('comboSplitterModal');
     loadInventory();
-    showToast('Preis erfolgreich auf die Komponenten aufgeteilt!', 'success');
+    showToast('Preise erfolgreich aufgeteilt!', 'success');
 }
+
 
 // ===========================
 // DATA MANAGEMENT
 // ===========================
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
 
 function exportData() {
     const data = {
@@ -1098,9 +1195,7 @@ function exportData() {
     const a = document.createElement('a');
     a.href = url;
     a.download = 'pc-flipping-data.json';
-    document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
     URL.revokeObjectURL(url);
     showToast('Daten erfolgreich exportiert!', 'success');
 }
@@ -1115,7 +1210,7 @@ function importData(event) {
     reader.onload = function(e) {
         try {
             const importedData = JSON.parse(e.target.result);
-            if (importedData && importedData.inventory && importedData.builds && importedData.sales) {
+            if (importedData.inventory && importedData.builds && importedData.sales) {
                 if (confirm('Importierte Daten werden Ihre aktuellen Daten überschreiben. Fortfahren?')) {
                     inventory = importedData.inventory;
                     builds = importedData.builds;
@@ -1151,18 +1246,4 @@ function clearAllData() {
             showToast('Fehler beim Löschen der Daten!', 'error');
         }
     }
-}
-
-// Utility function for sorting arrays
-function sortData(data, key, direction) {
-    data.sort((a, b) => {
-        const valA = a[key];
-        const valB = b[key];
-        
-        if (typeof valA === 'string' && typeof valB === 'string') {
-            return direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-        } else {
-            return direction === 'asc' ? valA - valB : valB - valA;
-        }
-    });
 }
