@@ -47,7 +47,7 @@ function checkRequiredElements() {
         'dataManagementModal', 'exportDataBtn', 'importDataBtn', 'importFile', 'clearDataBtn',
         'theme-toggle', 'qa-add-item', 'qa-add-build', 'combo-splitter-btn', 'comboSplitterModal',
         'editSaleModal', 'brandChart', 'categoryChart', 'sellItemModal', // Added sellItemModal
-        'sort-builds' // Added sort-builds select
+        'sort-builds', 'toast-container' // Added toast-container
     ];
     
     return requiredIds.every(id => document.getElementById(id) !== null);
@@ -75,7 +75,7 @@ function saveData() {
         console.log('Daten gespeichert');
     } catch (e) {
         console.error('Fehler beim Speichern der Daten:', e);
-        alert('Fehler beim Speichern der Daten!');
+        showToast('Fehler beim Speichern der Daten!', 'error');
     }
 }
 
@@ -113,6 +113,23 @@ function updateChartColors() {
     }
 }
 
+// ===========================
+// NOTIFICATION SYSTEM (TOASTS)
+// ===========================
+
+function showToast(message, type = 'success') {
+    const toastContainer = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+    
+    // Auto-remove the toast after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('hide');
+        toast.addEventListener('transitionend', () => toast.remove());
+    }, 3000);
+}
 
 // ===========================
 // NAVIGATION & UI MANAGEMENT
@@ -342,7 +359,7 @@ function updateRecentActivity() {
             type: 'build'
         })),
         ...sales.slice(-2).map(sale => ({
-            text: `"${sale.buildName}" verkauft für ${parseFloat(sale.soldPrice).toFixed(2)}€`,
+            text: `"${sale.buildName || sale.itemName}" verkauft für ${parseFloat(sale.soldPrice).toFixed(2)}€`,
             date: new Date(sale.date),
             type: 'sale'
         }))
@@ -523,7 +540,7 @@ function addOrUpdateInventoryItem(event) {
                 }
             }
             inventory[editingItemIndex] = { ...inventory[editingItemIndex], ...itemData, status: newStatus };
-            alert('Komponente erfolgreich aktualisiert!');
+            showToast('Komponente erfolgreich aktualisiert!', 'success');
         } else {
             const newItem = {
                 id: Date.now(),
@@ -531,7 +548,7 @@ function addOrUpdateInventoryItem(event) {
                 status: 'available'
             };
             inventory.push(newItem);
-            alert('Komponente erfolgreich hinzugefügt!');
+            showToast('Komponente erfolgreich hinzugefügt!', 'success');
         }
         saveData();
         closeModal('addItemModal');
@@ -539,14 +556,14 @@ function addOrUpdateInventoryItem(event) {
         loadBuilds();
     } catch (e) {
         console.error('Fehler beim Speichern der Komponente:', e);
-        alert('Fehler beim Speichern der Komponente!');
+        showToast('Fehler beim Speichern der Komponente!', 'error');
     }
 }
 
 function deleteInventoryItem(index) {
     const item = inventory[index];
     if (item.status === 'used') {
-        alert('Diese Komponente ist in einem Build verbaut und kann nicht gelöscht werden!');
+        showToast('Diese Komponente ist in einem Build verbaut und kann nicht gelöscht werden!', 'error');
         return;
     }
     if (confirm(`Komponente "${item.category} ${item.brand} ${item.model}" wirklich löschen?`)) {
@@ -554,9 +571,10 @@ function deleteInventoryItem(index) {
             inventory.splice(index, 1);
             saveData();
             loadInventory();
+            showToast('Komponente erfolgreich gelöscht!', 'success');
         } catch (e) {
             console.error('Fehler beim Löschen der Komponente:', e);
-            alert('Fehler beim Löschen der Komponente!');
+            showToast('Fehler beim Löschen der Komponente!', 'error');
         }
     }
 }
@@ -583,7 +601,7 @@ function sellInventoryItem(event) {
     const saleDate = document.getElementById('item-sale-date').value;
 
     if (isNaN(salePrice) || salePrice <= 0) {
-        alert('Bitte einen gültigen Verkaufspreis eingeben.');
+        showToast('Bitte einen gültigen Verkaufspreis eingeben.', 'error');
         return;
     }
 
@@ -609,7 +627,7 @@ function sellInventoryItem(event) {
     loadInventory();
     loadSales();
     updateDashboard();
-    alert('Komponente erfolgreich verkauft und in der Verkaufsliste hinzugefügt!');
+    showToast('Komponente erfolgreich verkauft!', 'success');
 }
 
 // ===========================
@@ -752,7 +770,7 @@ function addOrUpdateBuild(event) {
             build.budget = buildBudget;
             build.targetPrice = buildTargetPrice;
             build.imageUrl = buildImageUrl;
-            alert('Build erfolgreich aktualisiert!');
+            showToast('Build erfolgreich aktualisiert!', 'success');
         } else {
             const newBuild = {
                 id: Date.now(),
@@ -765,7 +783,7 @@ function addOrUpdateBuild(event) {
                 components: []
             };
             builds.push(newBuild);
-            alert('Neuer Build erfolgreich erstellt!');
+            showToast('Neuer Build erfolgreich erstellt!', 'success');
         }
         
         saveData();
@@ -773,7 +791,7 @@ function addOrUpdateBuild(event) {
         loadBuilds();
     } catch (e) {
         console.error('Fehler beim Speichern des Builds:', e);
-        alert('Fehler beim Speichern des Builds!');
+        showToast('Fehler beim Speichern des Builds!', 'error');
     }
 }
 
@@ -807,10 +825,10 @@ function deleteBuild(index) {
             loadBuilds();
             loadInventory();
             updateDashboard();
-            alert('Build erfolgreich gelöscht!');
+            showToast('Build erfolgreich gelöscht!', 'success');
         } catch (e) {
             console.error('Fehler beim Löschen des Builds:', e);
-            alert('Fehler beim Löschen des Builds!');
+            showToast('Fehler beim Löschen des Builds!', 'error');
         }
     }
 }
@@ -855,7 +873,7 @@ function addComponentToBuild(itemId) {
         closeModal('selectComponentModal');
         loadBuilds();
         loadInventory();
-        alert('Komponente erfolgreich zum Build hinzugefügt!');
+        showToast('Komponente erfolgreich zum Build hinzugefügt!', 'success');
     }
 }
 
@@ -872,7 +890,7 @@ function removeComponentFromBuild(buildIndex, componentId) {
             saveData();
             loadBuilds();
             loadInventory();
-            alert('Komponente erfolgreich aus dem Build entfernt!');
+            showToast('Komponente erfolgreich aus dem Build entfernt!', 'success');
         }
     }
 }
@@ -891,7 +909,7 @@ function sellBuild(event) {
     const saleDate = document.getElementById('sale-date').value;
     
     if (isNaN(salePrice) || salePrice <= 0) {
-        alert('Bitte einen gültigen Verkaufspreis eingeben.');
+        showToast('Bitte einen gültigen Verkaufspreis eingeben.', 'error');
         return;
     }
 
@@ -924,7 +942,7 @@ function sellBuild(event) {
     loadBuilds();
     loadSales();
     updateDashboard();
-    alert('Build erfolgreich verkauft!');
+    showToast('Build erfolgreich verkauft!', 'success');
 }
 
 // ===========================
@@ -994,7 +1012,7 @@ function addOrUpdateSale(event) {
     closeModal('editSaleModal');
     loadSales();
     updateDashboard();
-    alert('Verkauf erfolgreich aktualisiert!');
+    showToast('Verkauf erfolgreich aktualisiert!', 'success');
 }
 
 function deleteSale(index) {
@@ -1004,9 +1022,10 @@ function deleteSale(index) {
             saveData();
             loadSales();
             updateDashboard();
+            showToast('Verkauf erfolgreich gelöscht!', 'success');
         } catch (e) {
             console.error('Fehler beim Löschen des Verkaufs:', e);
-            alert('Fehler beim Löschen des Verkaufs!');
+            showToast('Fehler beim Löschen des Verkaufs!', 'error');
         }
     }
 }
@@ -1041,14 +1060,14 @@ function splitComboPrice() {
                             .map(input => inventory.find(item => item.id === parseInt(input.dataset.id)));
 
     if (isNaN(totalComboPrice) || selectedItems.length === 0) {
-        alert('Bitte einen Gesamtpreis eingeben und mindestens eine Komponente auswählen.');
+        showToast('Bitte einen Gesamtpreis eingeben und mindestens eine Komponente auswählen.', 'error');
         return;
     }
 
     const totalEstimatedPrice = selectedItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
 
     if (totalEstimatedPrice === 0) {
-        alert('Die ausgewählten Komponenten haben keinen Einkaufspreis. Kann nicht aufgeteilt werden.');
+        showToast('Die ausgewählten Komponenten haben keinen Einkaufspreis. Kann nicht aufgeteilt werden.', 'error');
         return;
     }
 
@@ -1060,7 +1079,7 @@ function splitComboPrice() {
     saveData();
     closeModal('comboSplitterModal');
     loadInventory();
-    alert('Preis erfolgreich auf die Komponenten aufgeteilt!');
+    showToast('Preis erfolgreich auf die Komponenten aufgeteilt!', 'success');
 }
 
 // ===========================
@@ -1083,6 +1102,7 @@ function exportData() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    showToast('Daten erfolgreich exportiert!', 'success');
 }
 
 function importData(event) {
@@ -1102,14 +1122,14 @@ function importData(event) {
                     sales = importedData.sales;
                     saveData();
                     showPage(document.querySelector('.nav-btn.active').dataset.page);
-                    alert('Daten erfolgreich importiert!');
+                    showToast('Daten erfolgreich importiert!', 'success');
                 }
             } else {
-                alert('Ungültiges JSON-Format. Bitte eine gültige Exportdatei auswählen.');
+                showToast('Ungültiges JSON-Format. Bitte eine gültige Exportdatei auswählen.', 'error');
             }
         } catch (error) {
             console.error('Fehler beim Importieren der Daten:', error);
-            alert('Fehler beim Importieren der Daten!');
+            showToast('Fehler beim Importieren der Daten!', 'error');
         }
     };
     reader.readAsText(file);
@@ -1125,10 +1145,10 @@ function clearAllData() {
             builds = [];
             sales = [];
             showPage('dashboard');
-            alert('Alle Daten erfolgreich gelöscht!');
+            showToast('Alle Daten erfolgreich gelöscht!', 'success');
         } catch (e) {
             console.error('Fehler beim Löschen der Daten:', e);
-            alert('Fehler beim Löschen der Daten!');
+            showToast('Fehler beim Löschen der Daten!', 'error');
         }
     }
 }
