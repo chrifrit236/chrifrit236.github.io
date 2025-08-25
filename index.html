@@ -113,13 +113,13 @@
                     <table id="inventory-table">
                         <thead>
                             <tr>
-                                <th>Kategorie</th>
-                                <th>Marke</th>
-                                <th>Modell</th>
-                                <th>Einkaufspreis</th>
-                                <th>Datum</th>
-                                <th>Quelle</th>
-                                <th>Status</th>
+                                <th data-sort="category">Kategorie <span class="sort-icon"></span></th>
+                                <th data-sort="brand">Marke <span class="sort-icon"></span></th>
+                                <th data-sort="model">Modell <span class="sort-icon"></span></th>
+                                <th data-sort="price">Einkaufspreis <span class="sort-icon"></span></th>
+                                <th data-sort="date">Datum <span class="sort-icon"></span></th>
+                                <th data-sort="source">Quelle <span class="sort-icon"></span></th>
+                                <th data-sort="status">Status <span class="sort-icon"></span></th>
                                 <th>Aktionen</th>
                             </tr>
                         </thead>
@@ -135,7 +135,20 @@
             <div id="builds" class="page">
                 <div class="page-header">
                     <h2>PC Builds</h2>
-                    <button id="add-build-btn" class="btn-primary">+ Neuer Build</button>
+                    <div class="header-buttons">
+                        <button id="add-build-btn" class="btn-primary">+ Neuer Build</button>
+                        <div class="sort-control">
+                            <label for="sort-builds">Sortieren:</label>
+                            <select id="sort-builds">
+                                <option value="name_asc">Name (A-Z)</option>
+                                <option value="name_desc">Name (Z-A)</option>
+                                <option value="cost_asc">Kosten (aufsteigend)</option>
+                                <option value="cost_desc">Kosten (absteigend)</option>
+                                <option value="target_asc">Zielpreis (aufsteigend)</option>
+                                <option value="target_desc">Zielpreis (absteigend)</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div id="builds-grid" class="builds-grid">
                     <div class="no-data">Noch keine Builds erstellt</div>
@@ -243,9 +256,7 @@
                         <option value="used">Verbaut</option>
                         <option value="sold">Verkauft</option>
                     </select>
-                    <small style="color: #6c757d; display: block; margin-top: 0.25rem;">
-                        ⚠️ Achtung: Status-Änderungen können Auswirkungen auf Builds haben
-                    </small>
+                    <small style="color: #6c757d; font-size: 0.8rem; margin-top: 5px;">* Nur ändern, wenn Sie sicher sind. Das Ändern des Status kann sich auf die Statistiken auswirken.</small>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal('addItemModal')">Abbrechen</button>
@@ -254,33 +265,27 @@
             </form>
         </div>
     </div>
-
+    
     <div id="addBuildModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h3>Neuer PC Build</h3>
+            <h3>Neuen Build starten</h3>
             <form id="addBuildForm">
                 <div class="form-group">
                     <label for="build-name">Build Name:</label>
                     <input type="text" id="build-name" required>
                 </div>
                 <div class="form-group">
-                    <label for="build-target-price">Zielverkaufspreis (€):</label>
+                    <label for="build-budget">Budget (€):</label>
+                    <input type="number" id="build-budget" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="build-target-price">Zielpreis (€):</label>
                     <input type="number" id="build-target-price" step="0.01" required>
                 </div>
                 <div class="form-group">
-                    <label for="build-budget">Budget (€):</label>
-                    <input type="number" id="build-budget" step="0.01">
-                    <small style="color: #6c757d; display: block; margin-top: 0.25rem;">
-                        Optionales Budget für den Build
-                    </small>
-                </div>
-                <div class="form-group">
-                    <label for="build-image-url">Bild URL:</label>
+                    <label for="build-image-url">Bild URL (optional):</label>
                     <input type="url" id="build-image-url">
-                    <small style="color: #6c757d; display: block; margin-top: 0.25rem;">
-                        Fügen Sie eine Bild-URL hinzu, um den Build zu visualisieren.
-                    </small>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal('addBuildModal')">Abbrechen</button>
@@ -294,34 +299,24 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <h3>Komponente auswählen</h3>
-            <div class="modal-inventory">
-                <div class="search-filter">
-                    <input type="text" id="search-modal-inventory" placeholder="Suchen...">
-                    <select id="filter-modal-category">
-                        <option value="">Alle Kategorien</option>
-                        <option value="CPU">CPU</option>
-                        <option value="GPU">GPU</option>
-                        <option value="RAM">RAM</option>
-                        <option value="Motherboard">Motherboard</option>
-                        <option value="SSD">SSD</option>
-                        <option value="HDD">HDD</option>
-                        <option value="Netzteil">Netzteil</option>
-                        <option value="Gehäuse">Gehäuse</option>
-                        <option value="Kühler">Kühler</option>
-                        <option value="Lüfter">Lüfter</option>
-                        <option value="Sonstiges">Sonstiges</option>
-                    </select>
-                </div>
-                <div id="modal-inventory-list">
-                    <p class="no-data">Keine verfügbaren Komponenten gefunden.</p>
-                </div>
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn-secondary" onclick="closeModal('selectComponentModal')">Schließen</button>
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table id="select-component-table">
+                    <thead>
+                        <tr>
+                            <th>Kategorie</th>
+                            <th>Marke</th>
+                            <th>Modell</th>
+                            <th>Einkaufspreis</th>
+                            <th>Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody id="select-component-tbody">
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-    
+
     <div id="sellBuildModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -332,41 +327,46 @@
                     <input type="number" id="sale-price" step="0.01" required>
                 </div>
                 <div class="form-group">
-                    <label for="sale-date">Verkaufsdatum:</label>
-                    <input type="date" id="sale-date" required>
-                </div>
-                <div class="form-group">
                     <label for="sale-buyer">Käufer (optional):</label>
                     <input type="text" id="sale-buyer">
                 </div>
+                <div class="form-group">
+                    <label for="sale-date">Datum des Verkaufs:</label>
+                    <input type="date" id="sale-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="sale-notes">Anmerkungen (optional):</label>
+                    <textarea id="sale-notes" rows="3"></textarea>
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal('sellBuildModal')">Abbrechen</button>
-                    <button type="submit" class="btn-primary">Verkaufen</button>
+                    <button type="submit" class="btn-success">Verkauf abschließen</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="editSaleModal" class="modal">
+    <div id="sellItemModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h3>Verkauf bearbeiten</h3>
-            <form id="editSaleForm">
+            <h3>Komponente verkaufen</h3>
+            <div id="sellItemInfo"></div>
+            <form id="sellItemForm">
                 <div class="form-group">
-                    <label for="edit-sale-price">Verkaufspreis (€):</label>
-                    <input type="number" id="edit-sale-price" step="0.01" required>
+                    <label for="item-sale-price">Verkaufspreis (€):</label>
+                    <input type="number" id="item-sale-price" step="0.01" required>
                 </div>
                 <div class="form-group">
-                    <label for="edit-sale-date">Verkaufsdatum:</label>
-                    <input type="date" id="edit-sale-date" required>
+                    <label for="item-sale-buyer">Käufer (optional):</label>
+                    <input type="text" id="item-sale-buyer">
                 </div>
                 <div class="form-group">
-                    <label for="edit-sale-buyer">Käufer (optional):</label>
-                    <input type="text" id="edit-sale-buyer">
+                    <label for="item-sale-date">Datum des Verkaufs:</label>
+                    <input type="date" id="item-sale-date" required>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="closeModal('editSaleModal')">Abbrechen</button>
-                    <button type="submit" class="btn-primary">Speichern</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('sellItemModal')">Abbrechen</button>
+                    <button type="submit" class="btn-success">Verkauf abschließen</button>
                 </div>
             </form>
         </div>
@@ -381,7 +381,7 @@
                 <input type="number" id="combo-total-price" step="0.01" required>
             </div>
             <div id="combo-inventory-list">
-                </div>
+            </div>
             <div class="form-actions">
                 <button type="button" class="btn-secondary" onclick="closeModal('comboSplitterModal')">Abbrechen</button>
                 <button type="button" class="btn-primary" id="split-price-btn">Preis aufteilen</button>
@@ -402,6 +402,36 @@
         </div>
     </div>
 
+    <div id="editSaleModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Verkauf bearbeiten</h3>
+            <div class="form-group">
+                <label for="edit-sale-price">Verkaufspreis (€):</label>
+                <input type="number" id="edit-sale-price" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-sale-buyer">Käufer (optional):</label>
+                <input type="text" id="edit-sale-buyer">
+            </div>
+            <div class="form-group">
+                <label for="edit-sale-date">Datum des Verkaufs:</label>
+                <input type="date" id="edit-sale-date" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('editSaleModal')">Abbrechen</button>
+                <button type="button" class="btn-primary" id="editSaleBtn">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewBuildModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="viewBuildContent"></div>
+        </div>
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
