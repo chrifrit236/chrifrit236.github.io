@@ -627,7 +627,7 @@ function sellInventoryItem(event) {
     loadInventory();
     loadSales();
     updateDashboard();
-    showToast('Komponente erfolgreich verkauft!', 'success');
+    showToast('Komponente erfolgreich als Einzelteil verkauft!', 'success'); // Subtle change here
 }
 
 // ===========================
